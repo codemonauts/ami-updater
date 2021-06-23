@@ -1,5 +1,9 @@
 #! /usr/bin/env python3
 import boto3
+from pprint import pprint
+
+# Number of launchtemplate versions to keep
+LIMIT = 3
 
 
 def find_latest_ami(search_string):
@@ -49,23 +53,52 @@ def lambda_handler(event, context):
 
         # Get $Latest version of the template
         latest = ec2.describe_launch_template_versions(LaunchTemplateId=template_id, Versions=["$Latest"])
+        latest_version = latest["LaunchTemplateVersions"][0]["VersionNumber"]
         data = latest["LaunchTemplateVersions"][0]["LaunchTemplateData"]
 
         # Replace ImageId with the new one
         if data["ImageId"] == ami_id:
             print("Already using the latest AMI.")
-            continue
+
         else:
             print("Not using the latest AMI. Will create a new version")
 
-        # Create new version
-        response = ec2.create_launch_template_version(
-            LaunchTemplateId=template_id, SourceVersion="$Latest", LaunchTemplateData={"ImageId": ami_id}
+            # Create new version
+            response = ec2.create_launch_template_version(
+                LaunchTemplateId=template_id, SourceVersion="$Latest", LaunchTemplateData={"ImageId": ami_id}
+            )
+
+            # Update latest ID to the newly created version
+            latest_version = response["LaunchTemplateVersion"]["VersionNumber"]
+
+            if response["ResponseMetadata"]["HTTPStatusCode"] != 200:
+                print("Aborting due to an error while creating the new launch tempalte")
+                print("The error was: {}".format(response))
+                return "error"
+
+        # Update default version to latest version
+        # Otherwise we couldn't delete old version if they are still set as default
+        ec2.modify_launch_template(
+            LaunchTemplateId=template_id,
+            DefaultVersion=str(latest_version),
         )
 
-        if response["ResponseMetadata"]["HTTPStatusCode"] != 200:
-            print("Aborting due to an error while creating the new launch tempalte")
-            print("The error was: {}".format(response))
-            return "error"
+        # Cleanup of old template versions
+        if latest_version > LIMIT:
+            versions = ec2.describe_launch_template_versions(
+                LaunchTemplateId=template_id, MaxVersion=str(latest_version - 3)
+            ).get("LaunchTemplateVersions", [])
+            for v in versions:
+                ami_id = v["LaunchTemplateData"]["ImageId"]
+                num = v["VersionNumber"]
+                print("Deleting version {} with attached AMI {}".format(num, ami_id))
+                try:
+                    ec2.deregister_image(ImageId=ami_id)
+                except:
+                    print("Couldn't delete AMI {}".format(ami_id))
+                ec2.delete_launch_template_versions(
+                    LaunchTemplateId=template_id,
+                    Versions=[str(num)],
+                )
 
     return "done"
