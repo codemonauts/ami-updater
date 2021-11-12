@@ -29,7 +29,9 @@ def find_latest_ami(search_string):
 
 def lambda_handler(event, context):
     ec2 = boto3.client("ec2")
-    response = ec2.describe_launch_templates(Filters=[{"Name": "tag-key", "Values": ["ami-search-string"]}])
+    response = ec2.describe_launch_templates(
+        Filters=[{"Name": "tag-key", "Values": ["ami-search-string"]}]
+    )
     templates = response["LaunchTemplates"]
     if len(templates):
         print("Found {} launch templates".format(len(templates)))
@@ -52,7 +54,9 @@ def lambda_handler(event, context):
             return "error"
 
         # Get $Latest version of the template
-        latest = ec2.describe_launch_template_versions(LaunchTemplateId=template_id, Versions=["$Latest"])
+        latest = ec2.describe_launch_template_versions(
+            LaunchTemplateId=template_id, Versions=["$Latest"]
+        )
         latest_version = latest["LaunchTemplateVersions"][0]["VersionNumber"]
         data = latest["LaunchTemplateVersions"][0]["LaunchTemplateData"]
 
@@ -65,7 +69,9 @@ def lambda_handler(event, context):
 
             # Create new version
             response = ec2.create_launch_template_version(
-                LaunchTemplateId=template_id, SourceVersion="$Latest", LaunchTemplateData={"ImageId": ami_id}
+                LaunchTemplateId=template_id,
+                SourceVersion="$Latest",
+                LaunchTemplateData={"ImageId": ami_id},
             )
 
             # Update latest ID to the newly created version
@@ -84,21 +90,24 @@ def lambda_handler(event, context):
         )
 
         # Cleanup of old template versions
-        if latest_version > LIMIT:
-            versions = ec2.describe_launch_template_versions(
-                LaunchTemplateId=template_id, MaxVersion=str(latest_version - 3)
-            ).get("LaunchTemplateVersions", [])
-            for v in versions:
-                ami_id = v["LaunchTemplateData"]["ImageId"]
-                num = v["VersionNumber"]
-                print("Deleting version {} with attached AMI {}".format(num, ami_id))
-                try:
-                    ec2.deregister_image(ImageId=ami_id)
-                except:
-                    print("Couldn't delete AMI {}".format(ami_id))
+        versions = ec2.describe_launch_template_versions(
+            LaunchTemplateId=template_id, MaxVersion=str(latest_version - LIMIT)
+        ).get("LaunchTemplateVersions", [])
+
+        for v in versions:
+            ami_id = v["LaunchTemplateData"]["ImageId"]
+            num = v["VersionNumber"]
+            print("Deleting version {} with attached AMI {}".format(num, ami_id))
+            try:
+                ec2.deregister_image(ImageId=ami_id)
+            except:
+                print("Couldn't delete AMI {}".format(ami_id))
+            try:
                 ec2.delete_launch_template_versions(
                     LaunchTemplateId=template_id,
                     Versions=[str(num)],
                 )
+            except:
+                print("Couldn't delete Launchtemplate {}".format(template_id))
 
     return "done"
