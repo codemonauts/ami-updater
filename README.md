@@ -10,6 +10,7 @@ Little Lambda script to update all your LaunchConfigurations after building a ne
     "ec2:CreateLaunchTemplateVersion",
     "ec2:DeleteLaunchTemplateVersions",
     "ec2:DeregisterImage",
+    "ec2:DescribeImages",
     "ec2:DescribeLaunchTemplateVersions"
     "ec2:DescribeLaunchTemplates",
     "ec2:GetLaunchTemplateData",
