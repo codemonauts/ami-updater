@@ -100,14 +100,16 @@ def lambda_handler(event, context):
             print("Deleting version {} with attached AMI {}".format(num, ami_id))
             try:
                 ec2.deregister_image(ImageId=ami_id)
-            except:
+            except Exception as ex:
                 print("Couldn't delete AMI {}".format(ami_id))
+                print(f"Reason: {ex}")
             try:
                 ec2.delete_launch_template_versions(
                     LaunchTemplateId=template_id,
                     Versions=[str(num)],
                 )
-            except:
+            except Exception as ex:
                 print("Couldn't delete Launchtemplate {}".format(template_id))
+                print(f"Reason: {ex}")
 
     return "done"
