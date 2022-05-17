@@ -89,6 +89,10 @@ def lambda_handler(event, context):
             DefaultVersion=str(latest_version),
         )
 
+        # we can't purge old versions if the counter is less then LIMIT
+        if latest_version < LIMIT:
+            continue
+
         # Cleanup of old template versions
         versions = ec2.describe_launch_template_versions(
             LaunchTemplateId=template_id, MaxVersion=str(latest_version - LIMIT)
