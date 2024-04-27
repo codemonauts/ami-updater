@@ -5,9 +5,11 @@ Module to update all AWS EC2 Launch Templates to the newest AMI version.
 """
 
 import boto3
+from environs import Env
 
-# Number of launchtemplate versions to keep
-LIMIT = 3
+# Get config from environment
+env = Env()
+keep_amis = env.str("KEEP_AMIS", 3)
 
 
 def find_latest_ami(search_string):
@@ -95,13 +97,13 @@ def lambda_handler(event, context):
             DefaultVersion=str(latest_version),
         )
 
-        # we can't purge old versions if the counter is less then LIMIT
-        if latest_version < LIMIT:
+        # we can't purge old versions if the counter is less then the limit
+        if latest_version < keep_amis:
             return "done"
 
         # Cleanup of old template versions
         versions = ec2.describe_launch_template_versions(
-            LaunchTemplateId=template_id, MaxVersion=str(latest_version - LIMIT)
+            LaunchTemplateId=template_id, MaxVersion=str(latest_version - keep_amis)
         ).get("LaunchTemplateVersions", [])
 
         for version in versions:
