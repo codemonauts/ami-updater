@@ -9,7 +9,7 @@ from environs import Env
 
 # Get config from environment
 env = Env()
-keep_amis = env.str("KEEP_AMIS", 3)
+keep_amis = env.int("KEEP_AMIS", 3)
 
 
 def find_latest_ami(search_string):
@@ -106,11 +106,14 @@ def lambda_handler(event, context):
             LaunchTemplateId=template_id, MaxVersion=str(latest_version - keep_amis)
         ).get("LaunchTemplateVersions", [])
 
+        print(versions)
+
         for version in versions:
             ami_id = version["LaunchTemplateData"]["ImageId"]
             num = version["VersionNumber"]
             ami_details = ec2.describe_images(ImageIds=[ami_id])
             print(f"Deleting version {num} with attached AMI {ami_id} and snapshots")
+            print(ami_details)
             # First: Deregister AMI
             try:
                 ec2.deregister_image(ImageId=ami_id)
