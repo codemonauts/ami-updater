@@ -80,10 +80,10 @@ data "aws_iam_policy_document" "lambda_logging_policy" {
 
     actions = [
       "logs:CreateLogStream",
-      "logs:PutLogEvent"
+      "logs:PutLogEvents"
     ]
 
-    resources = ["arn:aws:logs:${data.aws_caller_identity.current.account_id}:log-group:${var.log_group_name}:*"]
+    resources = ["arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:${var.log_group_name}:*"]
   }
 }
 
@@ -199,10 +199,11 @@ resource "aws_scheduler_schedule" "scheduler_daily" {
 # Lambda function
 
 resource "aws_lambda_function" "lambda_function" {
-  filename      = "package.zip"
-  function_name = var.lambda_function_name
-  role          = aws_iam_role.lambda_role.arn
-  handler       = "main.lambda_handler"
+  filename         = "package.zip"
+  function_name    = var.lambda_function_name
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "main.lambda_handler"
+  source_code_hash = fileexists("package.zip") ? filebase64sha256("package.zip") : null
 
   runtime       = "python3.11"
   architectures = ["arm64"]
