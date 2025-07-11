@@ -97,7 +97,7 @@ Or create a Lambda function with the AWS CLI. Replace the `<ARN>` with the ARN o
 aws lambda create-function \
     --function-name ami-updater \
     --runtime python3.11 \
-    --zip-file fileb://ami-updater.zip \
+    --zip-file fileb://package.zip \
     --handler main.lambda_handler \
     --timeout 60 \
     --publish \
