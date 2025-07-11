@@ -1,9 +1,9 @@
 format:
-	black -l 120 -t py311 .
+	black -l 120 -t py313 .
 	terraform fmt -check -recursive .
 
 test: init
-	black -l 120 --check -t py311 .
+	black -l 120 --check -t py313 .
 	terraform validate
 
 clean:

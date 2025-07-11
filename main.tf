@@ -205,7 +205,7 @@ resource "aws_lambda_function" "lambda_function" {
   handler          = "main.lambda_handler"
   source_code_hash = fileexists("package.zip") ? filebase64sha256("package.zip") : null
 
-  runtime       = "python3.11"
+  runtime       = "python3.13"
   architectures = ["arm64"]
   timeout       = 60
   publish       = true
