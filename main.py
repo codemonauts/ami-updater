@@ -30,13 +30,15 @@ def find_latest_ami(search_string):
     try:
         ami_list = response["Images"]
         latest_ami = sorted(ami_list, key=lambda k: k["CreationDate"], reverse=True)[0]
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return None
 
     return latest_ami["ImageId"]
 
 
-def lambda_handler(event, context):
+def lambda_handler(
+    event, context
+):  # pylint: disable=unused-argument,too-many-locals,too-many-branches,too-many-statements
     """
     Entrypoint for AWS Lambda
     """
@@ -118,7 +120,7 @@ def lambda_handler(event, context):
             try:
                 ec2.deregister_image(ImageId=ami_id)
                 print(f"Deregistered AMI {ami_id}")
-            except Exception as ex:
+            except Exception as ex:  # pylint: disable=broad-exception-caught
                 print(f"Couldn't deregister AMI {ami_id}")
                 print(f"Reason: {ex}")
             # Second: Delete corresponding version from launch template
@@ -128,7 +130,7 @@ def lambda_handler(event, context):
                     Versions=[str(num)],
                 )
                 print(f"Removed version {num} from launch template {template_id}")
-            except Exception as ex:
+            except Exception as ex:  # pylint: disable=broad-exception-caught
                 print(f"Couldn't remove version {num} from launch template {template_id}")
                 print(f"Reason: {ex}")
             # Third: Delete all snapshots of the AMI
@@ -138,7 +140,7 @@ def lambda_handler(event, context):
                     snapshot_id = block_device["Ebs"]["SnapshotId"]
                     ec2.delete_snapshot(SnapshotId=snapshot_id, DryRun=False)
                     print(f"Deleted snapshot {snapshot_id} of AMI {ami_id}")
-            except Exception as ex:
+            except Exception as ex:  # pylint: disable=broad-exception-caught
                 print(f"Couldn't delete snapshot {snapshot_id} of AMI {ami_id}")
                 print(f"Reason: {ex}")
 
