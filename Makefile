@@ -4,6 +4,7 @@ format:
 
 test: init
 	black -l 120 --check -t py313 .
+	pylint main.py
 	terraform validate
 
 clean:
